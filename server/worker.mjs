@@ -1,5 +1,8 @@
 const DAY=24*60*60*1000;
 const encoder=new TextEncoder();
+// Apps Script's default string HMAC encoding differs for non-ASCII input.
+// Sign an ASCII JSON representation; JSON.parse restores Cyrillic and emoji exactly.
+export function serializeMessage(value){return JSON.stringify(value).replace(/[\u007f-\uffff]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));}
 export async function hmac(secret,value){const key=await crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return [...new Uint8Array(await crypto.subtle.sign('HMAC',key,encoder.encode(value)))].map(b=>b.toString(16).padStart(2,'0')).join('');}
 export function validate(data){
   if(!data||typeof data!=='object')throw Error('Некорректная форма.');
@@ -12,7 +15,7 @@ export function validate(data){
 }
 async function identity(request,env){const ip=request.headers.get('CF-Connecting-IP');if(!ip)throw Error('IP_UNAVAILABLE');return hmac(env.IP_SECRET,ip.trim().toLowerCase());}
 async function deliver(env,id){const job=await env.DB.prepare('SELECT * FROM outbox WHERE id=?').bind(id).first();if(!job||job.state==='sent')return job;
-  const timestamp=Date.now();const message=JSON.stringify({timestamp,payload:JSON.parse(job.payload)});const signature=await hmac(env.BRIDGE_SECRET,message);
+  const timestamp=Date.now();const message=serializeMessage({timestamp,payload:JSON.parse(job.payload)});const signature=await hmac(env.BRIDGE_SECRET,message);
   const response=await fetch(env.SHEETS_BRIDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,signature}),signal:AbortSignal.timeout(15000)});
   if(!response.ok)throw Error('SHEET_UNAVAILABLE');const body=await response.json();if(!body.ok)throw Error('SHEET_REJECTED');
   await env.DB.prepare("UPDATE outbox SET state='sent',category=?,payload=NULL WHERE id=?").bind(body.category||'Неразобрано',id).run();return {state:'sent',category:body.category};

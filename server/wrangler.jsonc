@@ -1,10 +1,10 @@
 {
   "name": "liga-debatov-topics",
   "main": "worker.mjs",
-  "compatibility_date": "2026-11-08",
+  "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "vars": {"ALLOWED_ORIGIN": "https://ctiv656-rgb.github.io"},
-  "d1_databases": [{"binding":"DB","database_name":"liga-debatov-topics","database_id":"REPLACE_AFTER_DATABASE_CREATION"}],
+  "d1_databases": [{"binding":"DB","database_name":"liga-debatov-topics","database_id":"19cffa52-ffb3-4496-8776-9e79bf39675c"}],
   "triggers": {"crons":["*/5 * * * *"]},
   "observability": {"enabled":false}
 }

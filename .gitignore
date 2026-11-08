@@ -1,0 +1,7 @@
+server/.wrangler/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+*.private.json
+node_modules/

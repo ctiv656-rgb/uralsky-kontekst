@@ -22,5 +22,5 @@ function doPost(e){
     const safe=s=>{s=String(s||'');return /^[=+@\-\t\r]/.test(s)?"'"+s:s;};
     sheet.getRange(row,1,1,11).setValues([[p.id,Utilities.formatDate(new Date(p.createdAt),'Asia/Yekaterinburg','yyyy-MM-dd HH:mm:ss'),safe(p.topic),safe(p.team),safe(p.author),safe(p.telegram),c.category,'','',safe(c.matches),'Новое']]);
     sheet.getRange(row,9).setFormula('=IF(H'+row+'="";G'+row+';H'+row+')');sheet.getRange(row,3).setWrap(true);SpreadsheetApp.flush();return output({ok:true,category:c.category});
-  }catch(error){return output({ok:false,error:'Не удалось записать тему.'});}finally{if(lock.hasLock())lock.releaseLock();}
+  }catch(error){console.error(error.name+': '+error.message);return output({ok:false,error:'Не удалось записать тему.',code:['NOT_CONFIGURED','UNAUTHORIZED','EXPIRED','INVALID','CAPACITY'].includes(error.message)?error.message:'SHEET_WRITE'});}finally{if(lock.hasLock())lock.releaseLock();}
 }

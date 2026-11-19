@@ -69,7 +69,7 @@ def main():
                 if cached.get(entry['path']) == entry['sha'] and previous.is_file():
                     shutil.copyfile(previous, path)
                 else:
-                    curl(f'https://raw.githubusercontent.com/{REPO}/{revision}/{quote(entry["path"], safe="/")}', path, 45)
+                    curl(f'https://raw.githubusercontent.com/{REPO}/{revision}/{quote(entry["path"], safe="/")}', path, 300 if entry.get('size', 0) > 1000000 else 45)
                 data = path.read_bytes()
                 blob = b'blob ' + str(len(data)).encode() + b'\0' + data
                 if hashlib.sha1(blob).hexdigest() != entry['sha']:

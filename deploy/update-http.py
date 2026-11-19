@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 """Update a static release from GitHub over IPv4 HTTPS, without Git transport."""
 import fcntl
+from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
-import stat
 import subprocess
 import tempfile
-import zipfile
+from urllib.parse import quote
 
 BASE = Path('/opt/uralsky-kontekst')
 REPO = 'ctiv656-rgb/uralsky-kontekst'
@@ -46,22 +47,36 @@ def main():
             if current.is_symlink() and current.resolve() == target:
                 print('Already current:', revision)
                 return
-            archive = stage / 'source.zip'
-            curl(f'https://codeload.github.com/{REPO}/zip/{revision}', archive, 120)
-            unpack = stage / 'unpack'
-            unpack.mkdir()
-            with zipfile.ZipFile(archive) as z:
-                for item in z.infolist():
-                    path = (unpack / item.filename).resolve()
-                    if unpack.resolve() not in path.parents:
-                        raise ValueError('Unsafe archive path')
-                    if stat.S_ISLNK(item.external_attr >> 16):
-                        raise ValueError('Unexpected symlink in source archive')
-                z.extractall(unpack)
-            roots = list(unpack.iterdir())
-            if len(roots) != 1 or not roots[0].is_dir():
-                raise ValueError('Unexpected source layout')
-            source = roots[0]
+            # Some hosts allow raw HTTPS files but stall Git upload-pack/codeload
+            tree_file = stage / 'tree.json'
+            curl(f'https://api.github.com/repos/{REPO}/git/trees/{revision}?recursive=1', tree_file)
+            tree = json.loads(tree_file.read_text())
+            if tree.get('truncated'):
+                raise ValueError('GitHub returned a partial source tree')
+            source = stage / 'source'
+            source.mkdir()
+            cache = BASE / 'source-current'
+            manifest = cache / '.source-tree.json'
+            cached = json.loads(manifest.read_text()) if manifest.is_file() else {}
+            files = [entry for entry in tree['tree'] if entry['type'] == 'blob']
+            def download(entry):
+                relative = Path(entry['path'])
+                path = (source / relative).resolve()
+                if source.resolve() not in path.parents or entry['mode'] == '120000':
+                    raise ValueError('Unsafe source entry')
+                path.parent.mkdir(parents=True, exist_ok=True)
+                previous = cache / relative
+                if cached.get(entry['path']) == entry['sha'] and previous.is_file():
+                    shutil.copyfile(previous, path)
+                else:
+                    curl(f'https://raw.githubusercontent.com/{REPO}/{revision}/{quote(entry["path"], safe="/")}', path, 45)
+                data = path.read_bytes()
+                blob = b'blob ' + str(len(data)).encode() + b'\0' + data
+                if hashlib.sha1(blob).hexdigest() != entry['sha']:
+                    raise ValueError('Source checksum mismatch: ' + entry['path'])
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                list(pool.map(download, files))
+            (source / '.source-tree.json').write_text(json.dumps({e['path']: e['sha'] for e in files}))
             subprocess.run(['/usr/bin/python3', str(source / 'deploy/build.py'),
                             '--source', str(source), '--output', str(stage / 'public'),
                             '--revision', revision], check=True)

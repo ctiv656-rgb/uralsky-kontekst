@@ -22,9 +22,10 @@ async function deliver(env,id){const job=await env.DB.prepare('SELECT * FROM out
 }
 export async function handle(request,env){
   const origin=request.headers.get('Origin');const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin'};
-  if(origin===env.ALLOWED_ORIGIN){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Methods']='GET,POST,OPTIONS';headers['Access-Control-Allow-Headers']='Content-Type';}
+  const allowedOrigins=new Set((env.ALLOWED_ORIGINS||env.ALLOWED_ORIGIN||'').split(',').map(value=>value.trim()).filter(Boolean));
+  if(allowedOrigins.has(origin)){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Methods']='GET,POST,OPTIONS';headers['Access-Control-Allow-Headers']='Content-Type';}
   const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{...headers,...extra}});
-  if(origin!==env.ALLOWED_ORIGIN)return json({error:'Доступ запрещён.'},403);
+  if(!allowedOrigins.has(origin))return json({error:'Доступ запрещён.'},403);
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(!env.DB||!env.IP_SECRET||!env.BRIDGE_SECRET||!env.SHEETS_BRIDGE_URL)return json({error:'Приём тем пока не подключён.'},503);
   let ipHash;try{ipHash=await identity(request,env);}catch{return json({error:'Не удалось проверить лимит. Попробуй позже.'},503);}

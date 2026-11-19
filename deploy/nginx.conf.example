@@ -1,0 +1,22 @@
+# Replace example.com with the real site hostname before installing
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com;
+
+    root /opt/uralsky-kontekst/current;
+    index index.html;
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location ~* \.(?:css|js|json|svg|png|jpe?g|webp|woff2?)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location ~ /\. { deny all; }
+}

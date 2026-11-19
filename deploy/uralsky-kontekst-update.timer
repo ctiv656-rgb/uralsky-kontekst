@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Uralsky Kontekst GitHub updates every minute
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=60s
+AccuracySec=10s
+Unit=uralsky-kontekst-update.service
+
+[Install]
+WantedBy=timers.target

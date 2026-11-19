@@ -1,0 +1,18 @@
+[Unit]
+Description=Update Uralsky Kontekst from GitHub over HTTPS
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=context-deploy
+Group=context-deploy
+WorkingDirectory=/opt/uralsky-kontekst
+ExecStart=/usr/local/bin/uralsky-kontekst-http-update
+TimeoutStartSec=360
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/uralsky-kontekst
+UMask=0022

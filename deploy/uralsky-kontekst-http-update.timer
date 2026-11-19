@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Uralsky Kontekst releases every five minutes
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=5min
+AccuracySec=15s
+Unit=uralsky-kontekst-http-update.service
+
+[Install]
+WantedBy=timers.target

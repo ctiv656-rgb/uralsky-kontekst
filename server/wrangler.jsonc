@@ -3,7 +3,7 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
-  "vars": {"ALLOWED_ORIGIN": "https://ctiv656-rgb.github.io", "ALLOWED_ORIGINS": "https://ctiv656-rgb.github.io,https://uralsky-kontekst.ctiv656.chatgpt.site"},
+  "vars": {"ALLOWED_ORIGIN": "https://ctiv656-rgb.github.io", "ALLOWED_ORIGINS": "https://ctiv656-rgb.github.io,https://uralsky-kontekst.ctiv656.chatgpt.site,https://ural66context.ru,https://www.ural66context.ru"},
   "d1_databases": [{"binding":"DB","database_name":"liga-debatov-topics","database_id":"19cffa52-ffb3-4496-8776-9e79bf39675c"}],
   "triggers": {"crons":["*/5 * * * *"]},
   "observability": {"enabled":false}
